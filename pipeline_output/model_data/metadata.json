@@ -1,0 +1,23 @@
+{
+  "total_examples": 5,
+  "train_examples": 4,
+  "val_examples": 1,
+  "train_ratio": 0.8,
+  "format": "jsonl",
+  "self_instruct": {
+    "seed_examples_count": 2,
+    "batches": 1,
+    "generation_time": 3.6934468746185303
+  },
+  "filtered": {
+    "original_count": 5,
+    "filtered_count": 5,
+    "removed_count": 0
+  },
+  "filtering": {
+    "original_count": 5,
+    "filtered_count": 5,
+    "removed_count": 0,
+    "filtering_time": 0.006713151931762695
+  }
+}
