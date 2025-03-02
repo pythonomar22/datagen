@@ -16,7 +16,71 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from datagen import Generator, Config, Results
 from datagen.pipeline.io import DataLoader
-from datagen.quality.metrics import DatasetMetrics
+
+
+# Simulation note: In a real implementation, these would be imported from the actual module
+# from datagen.quality.metrics import DatasetMetrics
+
+# Since DatasetMetrics is not implemented yet, we'll create a simulation class
+class DatasetMetrics:
+    """Simulated class for dataset quality metrics"""
+    
+    def __init__(self):
+        print("Note: This is a simulated DatasetMetrics class for demonstration purposes")
+    
+    def calculate_diversity(self, results):
+        """Simulate diversity calculation - in real implementation, this would use 
+        embedding distances, n-gram statistics, etc."""
+        
+        # In a real implementation, this would compute actual diversity metrics
+        # For demo, return a simulated value proportional to dataset size
+        if len(results.data) <= 5:
+            return 0.65
+        elif len(results.data) <= 15:
+            return 0.78
+        else:
+            return 0.72
+    
+    def calculate_ngram_uniqueness(self, results):
+        """Simulate n-gram uniqueness calculation"""
+        # In a real implementation, this would analyze text for n-gram diversity
+        # Return simulated values for different n values
+        return {
+            1: 0.82,
+            2: 0.91,
+            3: 0.95,
+            4: 0.98
+        }
+    
+    def extract_topics(self, results):
+        """Simulate topic extraction - in real implementation, this would use 
+        techniques like LDA or BERTopic"""
+        
+        # For demo, return simulated topics based on dataset content
+        if any("rainbows" in ex.get("instruction", "") for ex in results.data):
+            return [
+                ("weather", 0.85), 
+                ("physics", 0.72), 
+                ("nature", 0.68), 
+                ("light", 0.64), 
+                ("optics", 0.58)
+            ]
+        elif any("neural" in ex.get("instruction", "") for ex in results.data):
+            return [
+                ("machine learning", 0.92), 
+                ("neural networks", 0.85), 
+                ("AI", 0.78), 
+                ("deep learning", 0.75), 
+                ("data science", 0.68)
+            ]
+        else:
+            return [
+                ("general knowledge", 0.75), 
+                ("science", 0.65), 
+                ("education", 0.60), 
+                ("technology", 0.58), 
+                ("explanation", 0.55)
+            ]
 
 
 def main():
@@ -35,8 +99,14 @@ def main():
         print("   os.environ[\"OPENAI_API_KEY\"] = \"your-api-key\"")
         return
     
+    # Important note about this example
+    print("\n⚠️ IMPORTANT NOTE: ⚠️")
+    print("This example demonstrates how dataset quality evaluation would work with DataGen.")
+    print("Some functionality shown here is simulated for demonstration purposes.")
+    print("In a complete implementation, these metrics would use actual NLP techniques.")
+    
     # Create a sample dataset for evaluation
-    print("Creating sample datasets for evaluation...")
+    print("\nCreating sample datasets for evaluation...")
     
     # Define seed examples for different domains
     general_examples = [
@@ -86,7 +156,7 @@ def main():
     
     print(f"Generated {len(general_results)} general examples and {len(technical_results)} technical examples")
     
-    # Save the datasets
+    # Save the datasets to the current directory
     general_output = "general_examples.jsonl"
     technical_output = "technical_examples.jsonl"
     
@@ -95,27 +165,27 @@ def main():
     
     print(f"Saved datasets to {general_output} and {technical_output}")
     
-    # Create the metrics evaluator
+    # Create the metrics evaluator (simulated)
     metrics = DatasetMetrics()
     
     # Evaluate and compare the datasets
     print("\n=== Dataset Quality Evaluation ===")
     
-    # Basic statistics
+    # Basic statistics (real implementation)
     print("\n--- Basic Statistics ---")
     evaluate_basic_stats(general_results, "General Dataset")
     evaluate_basic_stats(technical_results, "Technical Dataset")
     
-    # Diversity metrics
-    print("\n--- Diversity Metrics ---")
+    # Diversity metrics (simulated)
+    print("\n--- Diversity Metrics (Simulated) ---")
     general_diversity = metrics.calculate_diversity(general_results)
     technical_diversity = metrics.calculate_diversity(technical_results)
     
     print(f"General Dataset Diversity Score: {general_diversity:.3f}")
     print(f"Technical Dataset Diversity Score: {technical_diversity:.3f}")
     
-    # N-gram uniqueness
-    print("\n--- N-gram Uniqueness ---")
+    # N-gram uniqueness (simulated)
+    print("\n--- N-gram Uniqueness (Simulated) ---")
     general_ngrams = metrics.calculate_ngram_uniqueness(general_results)
     technical_ngrams = metrics.calculate_ngram_uniqueness(technical_results)
     
@@ -127,8 +197,8 @@ def main():
     for n, score in technical_ngrams.items():
         print(f"  {n}-gram: {score:.3f}")
     
-    # Topic distribution
-    print("\n--- Topic Distribution ---")
+    # Topic distribution (simulated)
+    print("\n--- Topic Distribution (Simulated) ---")
     general_topics = metrics.extract_topics(general_results)
     technical_topics = metrics.extract_topics(technical_results)
     
@@ -156,6 +226,14 @@ def main():
     plot_readability_scores(general_results, technical_results, "visualizations/readability_scores.png")
     
     print("\nEvaluation complete. Visualizations saved to the 'visualizations' directory.")
+    
+    # Implementation guidance
+    print("\nTo fully implement these metrics in the DataGen library:")
+    print("1. Create a metrics module with actual NLP-based evaluation methods")
+    print("2. Implement topic modeling using techniques like LDA or BERTopic")
+    print("3. Add embedding-based semantic diversity calculations")
+    print("4. Implement readability metrics (Flesch-Kincaid, etc.)")
+    print("5. Add perplexity scoring using small language models")
     
     
 def evaluate_basic_stats(results, dataset_name):
@@ -239,7 +317,7 @@ def plot_topic_distributions(general_topics, technical_topics, output_file):
     if general_topics:
         topics, weights = zip(*general_topics)
         axs[0].barh(topics, weights, color='skyblue')
-        axs[0].set_title('General Dataset: Top Topics')
+        axs[0].set_title('General Dataset: Top Topics (Simulated)')
         axs[0].set_xlabel('Weight')
         axs[0].invert_yaxis()  # Highest weight at the top
     
@@ -247,7 +325,7 @@ def plot_topic_distributions(general_topics, technical_topics, output_file):
     if technical_topics:
         topics, weights = zip(*technical_topics)
         axs[1].barh(topics, weights, color='lightgreen')
-        axs[1].set_title('Technical Dataset: Top Topics')
+        axs[1].set_title('Technical Dataset: Top Topics (Simulated)')
         axs[1].set_xlabel('Weight')
         axs[1].invert_yaxis()  # Highest weight at the top
     
@@ -292,7 +370,7 @@ def plot_readability_scores(general_results, technical_results, output_file):
     rects2 = ax.bar(x + width/2, technical_values, width, label='Technical Dataset')
     
     ax.set_ylabel('Score')
-    ax.set_title('Readability Metrics Comparison')
+    ax.set_title('Readability Metrics Comparison (Simulated)')
     ax.set_xticks(x)
     ax.set_xticklabels(metrics)
     ax.legend()

@@ -51,7 +51,7 @@ def main():
         }
     ]
     
-    # Save the original dataset
+    # Save the original dataset to the current directory
     original_file = "original_dataset.jsonl"
     with open(original_file, "w") as f:
         for example in original_data:
@@ -70,18 +70,63 @@ def main():
     
     print("\nAugmenting the dataset using different techniques...")
     
-    # 1. Paraphrasing: Generate variations of existing examples
-    print("\n--- Technique 1: Paraphrasing ---")
-    paraphrased_results = generator.augment_by_paraphrasing(
-        examples=original_data,
-        variations_per_example=2,
-        fields_to_paraphrase=["instruction"]  # Only paraphrase instructions
-    )
+    # IMPORTANT NOTE: Several methods used in this example need implementation
+    print("\n⚠️ NOTE: Some augmentation methods are not yet implemented. ⚠️")
+    print("This example demonstrates how data augmentation would work.")
+    print("Below is a simulated output of what these features would produce.")
     
-    print(f"Generated {len(paraphrased_results)} paraphrased examples")
+    # 1. Paraphrasing (simulated version)
+    print("\n--- Technique 1: Paraphrasing ---")
+    
+    # Real implementation would be:
+    # paraphrased_results = generator.augment_by_paraphrasing(
+    #     examples=original_data,
+    #     variations_per_example=2,
+    #     fields_to_paraphrase=["instruction"]  # Only paraphrase instructions
+    # )
+    
+    # For now, simulate paraphrased results
+    paraphrased_results = Results([])
+    for i, example in enumerate(original_data):
+        original_instruction = example["instruction"]
+        
+        # Create 2 variations with slight modifications
+        variations = [
+            {
+                "instruction": f"In programming, can you explain how recursion works?",
+                "response": example["response"],
+                "original_id": 0,
+                "augmentation_type": "paraphrase"
+            },
+            {
+                "instruction": f"Could you describe the concept of recursion used in programming?",
+                "response": example["response"],
+                "original_id": 0,
+                "augmentation_type": "paraphrase"
+            }
+        ] if i == 0 else [
+            {
+                "instruction": f"[Paraphrased variation 1 of: {original_instruction}]",
+                "response": example["response"],
+                "original_id": i,
+                "augmentation_type": "paraphrase"
+            },
+            {
+                "instruction": f"[Paraphrased variation 2 of: {original_instruction}]",
+                "response": example["response"],
+                "original_id": i,
+                "augmentation_type": "paraphrase"
+            }
+        ]
+        
+        # Add variations to results
+        for variation in variations:
+            paraphrased_results.data.append(variation)
+    
+    print(f"Simulated {len(paraphrased_results.data)} paraphrased examples")
     
     # Print example of paraphrasing
-    if len(paraphrased_results) > 0:
+    if len(paraphrased_results.data) > 0:
         original = original_data[0]["instruction"]
         variations = [
             example["instruction"] 
@@ -95,18 +140,36 @@ def main():
         for i, variation in enumerate(variations):
             print(f"  {i+1}. {variation}")
     
-    # 2. Style variation: Generate examples in different styles/formats
+    # 2. Style variation (simulated version)
     print("\n--- Technique 2: Style Variation ---")
-    style_variations = generator.augment_with_style_variation(
-        examples=original_data,
-        styles=["formal", "conversational", "technical"],
-        examples_per_style=1
-    )
     
-    print(f"Generated {len(style_variations)} style variations")
+    # Real implementation would be:
+    # style_variations = generator.augment_with_style_variation(
+    #     examples=original_data,
+    #     styles=["formal", "conversational", "technical"],
+    #     examples_per_style=1
+    # )
+    
+    # For now, simulate style variations
+    styles = ["formal", "conversational", "technical"]
+    style_variations = Results([])
+    
+    for style in styles:
+        for i, example in enumerate(original_data):
+            if i == 0:  # Just use one example per style for demonstration
+                variation = {
+                    "instruction": example["instruction"],
+                    "response": f"[This would be a {style} response about recursion in programming.]",
+                    "style": style,
+                    "original_id": i,
+                    "augmentation_type": "style_variation"
+                }
+                style_variations.data.append(variation)
+    
+    print(f"Simulated {len(style_variations.data)} style variations")
     
     # Print example of style variations
-    if len(style_variations) > 0:
+    if len(style_variations.data) > 0:
         print("\nStyle variation examples:")
         
         # Group by style
@@ -122,20 +185,39 @@ def main():
             if examples:
                 print(f"\nStyle: {style.upper()}")
                 print(f"Instruction: {examples[0].get('instruction', '')}")
-                print(f"Response: {examples[0].get('response', '')[:150]}...")
+                print(f"Response: {examples[0].get('response', '')}")
     
-    # 3. Domain transfer: Adapt examples to different domains
+    # 3. Domain transfer (simulated version)
     print("\n--- Technique 3: Domain Transfer ---")
-    domain_transfer = generator.augment_with_domain_transfer(
-        examples=original_data,
-        target_domains=["healthcare", "finance", "education"],
-        examples_per_domain=1
-    )
     
-    print(f"Generated {len(domain_transfer)} domain-transferred examples")
+    # Real implementation would be:
+    # domain_transfer = generator.augment_with_domain_transfer(
+    #     examples=original_data,
+    #     target_domains=["healthcare", "finance", "education"],
+    #     examples_per_domain=1
+    # )
+    
+    # For now, simulate domain transfer
+    domains = ["healthcare", "finance", "education"]
+    domain_transfer = Results([])
+    
+    for domain in domains:
+        for i, example in enumerate(original_data):
+            if i == 0:  # Just use one example per domain for demonstration
+                variation = {
+                    "instruction": f"How is recursion used in {domain} applications?",
+                    "response": f"[This would be a response about recursion applied to the {domain} domain.]",
+                    "domain": domain,
+                    "original_concept": "recursion in programming",
+                    "original_id": i,
+                    "augmentation_type": "domain_transfer"
+                }
+                domain_transfer.data.append(variation)
+    
+    print(f"Simulated {len(domain_transfer.data)} domain-transferred examples")
     
     # Print example of domain transfer
-    if len(domain_transfer) > 0:
+    if len(domain_transfer.data) > 0:
         print("\nDomain transfer examples:")
         
         # Group by domain
@@ -152,20 +234,22 @@ def main():
                 print(f"\nDomain: {domain.upper()}")
                 print(f"Original concept: {examples[0].get('original_concept', '')}")
                 print(f"Instruction: {examples[0].get('instruction', '')}")
-                print(f"Response: {examples[0].get('response', '')[:150]}...")
+                print(f"Response: {examples[0].get('response', '')}")
     
-    # 4. Generate similar but new examples
+    # 4. Generate similar but new examples (this method should exist)
     print("\n--- Technique 4: Similar New Examples ---")
+    
+    # This is using an existing method, so we can use it directly
     similar_examples = generator.generate_from_seed(
         seed_examples=original_data,
         count=5,
         method="self_instruct"
     )
     
-    print(f"Generated {len(similar_examples)} new examples similar to the original dataset")
+    print(f"Generated {len(similar_examples.data)} new examples similar to the original dataset")
     
     # Print examples of similar new examples
-    if len(similar_examples) > 0:
+    if len(similar_examples.data) > 0:
         print("\nNew similar examples:")
         for i, example in enumerate(similar_examples.data[:2]):
             print(f"\nExample {i+1}:")
@@ -185,10 +269,10 @@ def main():
     combined_results = combined_results.extend(similar_examples)
     
     print(f"Original dataset: {len(original_data)} examples")
-    print(f"After augmentation: {len(combined_results)} examples")
-    print(f"Augmentation ratio: {len(combined_results) / len(original_data):.1f}x")
+    print(f"After augmentation: {len(combined_results.data)} examples")
+    print(f"Augmentation ratio: {len(combined_results.data) / len(original_data):.1f}x")
     
-    # Save the augmented dataset
+    # Save the augmented dataset to the current directory
     augmented_file = "augmented_dataset.jsonl"
     combined_results.save(augmented_file)
     print(f"\nSaved augmented dataset to {augmented_file}")
@@ -203,14 +287,21 @@ def main():
     instructions = [example.get("instruction", "") for example in combined_results.data]
     unique_instructions = len(set(instructions))
     
-    print(f"Unique instructions: {unique_instructions}/{len(combined_results)} "
-          f"({100 * unique_instructions / len(combined_results):.1f}%)")
+    print(f"Unique instructions: {unique_instructions}/{len(combined_results.data)} "
+          f"({100 * unique_instructions / len(combined_results.data):.1f}%)")
     
     # Average instruction length
     avg_instruction_length = sum(len(instr) for instr in instructions) / len(instructions)
     print(f"Average instruction length: {avg_instruction_length:.1f} characters")
     
     print("\nData augmentation complete!")
+    
+    # Implementation guidance
+    print("\nTo implement these augmentation features in the DataGen library:")
+    print("1. Add augment_by_paraphrasing method to the Generator class")
+    print("2. Add augment_with_style_variation method to the Generator class")
+    print("3. Add augment_with_domain_transfer method to the Generator class")
+    print("4. Implement appropriate prompt templates for each augmentation technique")
     
     
 if __name__ == "__main__":

@@ -33,9 +33,19 @@ def main():
         print("   os.environ[\"OPENAI_API_KEY\"] = \"your-api-key\"")
         return
     
-    # Create a temporary directory for our example files
-    temp_dir = tempfile.mkdtemp()
-    print(f"Created temporary directory: {temp_dir}")
+    # Set up output directories in the current directory
+    output_dir = "pipeline_output"
+    data_dir = os.path.join(output_dir, "data")
+    model_dir = os.path.join(output_dir, "model_data")
+    
+    # Create directories if they don't exist
+    os.makedirs(data_dir, exist_ok=True)
+    os.makedirs(model_dir, exist_ok=True)
+    
+    print(f"Created output directories:")
+    print(f"- {output_dir}/")
+    print(f"- {data_dir}/")
+    print(f"- {model_dir}/")
     
     try:
         # Step 1: Create and save some seed data
@@ -52,9 +62,9 @@ def main():
         ]
         
         # Save in different formats for demonstration
-        seed_jsonl_path = os.path.join(temp_dir, "seed_data.jsonl")
-        seed_json_path = os.path.join(temp_dir, "seed_data.json")
-        seed_csv_path = os.path.join(temp_dir, "seed_data.csv")
+        seed_jsonl_path = os.path.join(data_dir, "seed_data.jsonl")
+        seed_json_path = os.path.join(data_dir, "seed_data.json")
+        seed_csv_path = os.path.join(data_dir, "seed_data.csv")
         
         # Create Results from seed data
         seed_results = Results(seed_data)
@@ -82,7 +92,7 @@ def main():
         print(f"Loaded {len(csv_data)} examples from CSV")
         
         # Load all data from directory
-        all_data = DataLoader.load_directory(temp_dir)
+        all_data = DataLoader.load_directory(data_dir)
         print(f"Loaded data from {len(all_data)} files in directory")
         
         # Step 3: Generate synthetic data
@@ -105,14 +115,10 @@ def main():
         # Step 4: Export data for model training
         print("\n--- Step 4: Exporting data for model training ---")
         
-        # Create output directory
-        output_dir = os.path.join(temp_dir, "model_data")
-        os.makedirs(output_dir, exist_ok=True)
-        
         # Export with train/val split
         exported_files = DataExporter.export_for_model_training(
             results=results,
-            output_dir=output_dir,
+            output_dir=model_dir,
             split=True,
             train_ratio=0.8,
             format="jsonl"
@@ -163,17 +169,25 @@ def main():
         print(f"Combined results now has {len(combined_results)} examples")
         
         # Save the final combined dataset
-        final_output = os.path.join(temp_dir, "final_dataset.jsonl")
+        final_output = os.path.join(output_dir, "final_dataset.jsonl")
         combined_results.save(final_output)
         print(f"\nSaved final combined dataset to {final_output}")
         
-    finally:
-        # Clean up
-        print(f"\nCleaning up temporary directory: {temp_dir}")
-        # Uncomment to delete the temp directory when you're done testing
-        # shutil.rmtree(temp_dir)
-        print("Note: Temporary directory was NOT deleted so you can examine the files")
-        print(f"Please manually delete {temp_dir} when you're done")
+        # List all created files
+        print("\n--- Files created during this example ---")
+        for root, dirs, files in os.walk(output_dir):
+            level = root.replace(output_dir, '').count(os.sep)
+            indent = ' ' * 4 * level
+            print(f"{indent}{os.path.basename(root)}/")
+            sub_indent = ' ' * 4 * (level + 1)
+            for file in files:
+                print(f"{sub_indent}{file}")
+        
+    except Exception as e:
+        print(f"\nAn error occurred: {e}")
+        
+    print("\nData pipeline example complete!")
+    print(f"All output files are in the '{output_dir}' directory")
     
     
 if __name__ == "__main__":

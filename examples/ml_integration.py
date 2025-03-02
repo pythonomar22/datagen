@@ -6,7 +6,6 @@ Example of integrating DataGen with ML training pipelines (PyTorch)
 import os
 import sys
 import logging
-import tempfile
 import json
 import torch
 from torch.utils.data import Dataset, DataLoader as TorchDataLoader
@@ -166,9 +165,19 @@ def main():
     print("Note: This will train a small language model on synthetic data.")
     print("For demonstration purposes, we'll use a very small model and limited training.")
     
-    # Create a temporary working directory
-    temp_dir = tempfile.mkdtemp()
-    print(f"\nCreated temporary directory for training files: {temp_dir}")
+    # Create output directories in the current directory
+    output_dir = "ml_training"
+    data_dir = os.path.join(output_dir, "data")
+    model_dir = os.path.join(output_dir, "model")
+    
+    # Create the directories if they don't exist
+    os.makedirs(data_dir, exist_ok=True)
+    os.makedirs(model_dir, exist_ok=True)
+    
+    print(f"\nCreated output directories:")
+    print(f"- {output_dir}/")
+    print(f"- {data_dir}/")
+    print(f"- {model_dir}/")
     
     try:
         # Step 1: Generate synthetic training data
@@ -213,9 +222,9 @@ def main():
         
         print(f"Generated {len(validation_results)} validation examples")
         
-        # Save the datasets
-        train_path = os.path.join(temp_dir, "train.jsonl")
-        val_path = os.path.join(temp_dir, "val.jsonl")
+        # Save the datasets to the data directory
+        train_path = os.path.join(data_dir, "train.jsonl")
+        val_path = os.path.join(data_dir, "val.jsonl")
         
         training_results.save(train_path)
         validation_results.save(val_path)
@@ -241,16 +250,28 @@ def main():
         print("\n--- Step 3: Training a model on synthetic data ---")
         print("Note: Training is limited for demonstration purposes. In a real scenario, you would use more data and longer training.")
         
-        # Set output directory
-        output_dir = os.path.join(temp_dir, "model_output")
-        os.makedirs(output_dir, exist_ok=True)
-        
         # In a real example, we would train the model
         # For demo purposes, we'll just describe the process
         print("\nIn a full implementation, we would now train the model with code like:")
-        print("model, tokenizer = train_model_on_synthetic_data(train_dataset, val_dataset, output_dir)")
+        print(f"model, tokenizer = train_model_on_synthetic_data(train_dataset, val_dataset, '{model_dir}')")
         print("\nSince training even a small model requires significant compute resources,")
         print("this example stops short of actual training but demonstrates the full code flow.")
+        
+        # Create a small file to simulate model outputs
+        model_info = {
+            "model_type": "gpt2",
+            "training_examples": len(train_dataset),
+            "validation_examples": len(val_dataset),
+            "simulated": True,
+            "note": "This is a placeholder for a trained model. In a real scenario, PyTorch model files would be saved here."
+        }
+        
+        # Save the model info to simulate model output
+        model_info_path = os.path.join(model_dir, "model_info.json")
+        with open(model_info_path, "w") as f:
+            json.dump(model_info, f, indent=2)
+        
+        print(f"Saved simulated model information to: {model_info_path}")
         
         # Step 4: Demonstrate model inference
         print("\n--- Step 4: Model inference demonstration ---")
@@ -267,17 +288,27 @@ def main():
             print(f"\nPrompt: {prompt}")
             print("Response: [This would show the model's generated response if we had trained it]")
         
+        # List all files created
+        print("\n--- Files created during this example ---")
+        for root, dirs, files in os.walk(output_dir):
+            level = root.replace(output_dir, '').count(os.sep)
+            indent = ' ' * 4 * level
+            print(f"{indent}{os.path.basename(root)}/")
+            sub_indent = ' ' * 4 * (level + 1)
+            for file in files:
+                print(f"{sub_indent}{file}")
+        
         print("\nTo integrate this with a real ML workflow, you would:")
         print("1. Generate larger synthetic datasets with DataGen")
         print("2. Format the data appropriately for your model architecture")
         print("3. Train models using your preferred ML framework (PyTorch, TensorFlow, etc.)")
         print("4. Evaluate performance and iterate on data generation parameters")
     
-    finally:
-        # Cleanup (commented out to allow inspection)
-        print(f"\nTemporary directory with files: {temp_dir}")
-        print("Note: The temporary directory was NOT deleted so you can examine the files.")
-        print("Please manually delete it when you're done.")
+    except Exception as e:
+        print(f"\nAn error occurred: {e}")
+    
+    print("\nML integration example complete!")
+    print(f"All output files are in the '{output_dir}' directory")
     
     
 if __name__ == "__main__":

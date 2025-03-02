@@ -29,6 +29,9 @@ def run_command(cmd, description):
         print("Command failed with error:")
         print(e.stderr)
         return None
+    except FileNotFoundError:
+        print("Command not found. Make sure the CLI is properly installed.")
+        return None
 
 
 def main():
@@ -36,9 +39,16 @@ def main():
     # Set up logging
     logging.basicConfig(level=logging.INFO)
     
-    # Create a temporary directory for our example files
-    temp_dir = tempfile.mkdtemp()
-    print(f"Created temporary directory: {temp_dir}")
+    # Important note about CLI implementation
+    print("\n⚠️ IMPORTANT NOTE: ⚠️")
+    print("This example demonstrates how the DataGen CLI would work.")
+    print("The CLI module may not be fully implemented yet, so some commands might fail.")
+    print("This script shows the expected command structure and workflow.")
+    
+    # Create output directories in the current directory
+    output_dir = "cli_example"
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"\nCreated output directory: {output_dir}")
     
     try:
         # Check if the datagen package is installed and accessible
@@ -51,13 +61,14 @@ def main():
                 text=True
             )
             print("DataGen CLI is available")
-        except subprocess.CalledProcessError:
-            print("⚠️ DataGen CLI might not be installed correctly.")
-            print("This example assumes you have installed the package or are running from the source directory.")
-            return
+            cli_available = True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            print("⚠️ DataGen CLI is not installed or not implemented yet.")
+            print("This example will demonstrate the expected commands without executing them.")
+            cli_available = False
         
         # Step 1: Create a configuration file
-        config_path = os.path.join(temp_dir, "config.yaml")
+        config_path = os.path.join(output_dir, "config.yaml")
         
         config = {
             "sampling": {
@@ -88,7 +99,7 @@ def main():
         print(f"Created configuration file at {config_path}")
         
         # Step 2: Create seed examples
-        seed_path = os.path.join(temp_dir, "seed_examples.jsonl")
+        seed_path = os.path.join(output_dir, "seed_examples.jsonl")
         
         seed_examples = [
             {
@@ -116,10 +127,15 @@ def main():
             "--log-level", "INFO"
         ]
         
-        run_command(init_cmd, "Initializing DataGen")
+        if cli_available:
+            run_command(init_cmd, "Initializing DataGen")
+        else:
+            print("\n--- Initializing DataGen (command demonstration only) ---")
+            print(f"Command that would be run: {' '.join(init_cmd)}")
+            print("This command would initialize DataGen using the specified configuration.")
         
         # Step 4: Run the 'generate' command to create synthetic data
-        output_path = os.path.join(temp_dir, "generated_data.jsonl")
+        output_path = os.path.join(output_dir, "generated_data.jsonl")
         
         generate_cmd = [
             "python", "-m", "datagen.cli", "generate",
@@ -139,8 +155,8 @@ def main():
         print("Not executing the command in this example")
         
         # Step 5: Demonstrate the 'evolve' command
-        instructions_path = os.path.join(temp_dir, "instructions.txt")
-        evolved_path = os.path.join(temp_dir, "evolved_instructions.jsonl")
+        instructions_path = os.path.join(output_dir, "instructions.txt")
+        evolved_path = os.path.join(output_dir, "evolved_instructions.jsonl")
         
         # Create instructions file
         with open(instructions_path, "w") as f:
@@ -175,32 +191,44 @@ def main():
         prepare_cmd = [
             "python", "-m", "datagen.cli", "prepare",
             "--input-file", output_path,
-            "--output-dir", os.path.join(temp_dir, "training_data"),
+            "--output-dir", os.path.join(output_dir, "training_data"),
             "--split",
             "--train-ratio", "0.8",
             "--format", "jsonl"
         ]
         
-        run_command(prepare_cmd, "Preparing data for model training")
+        if cli_available:
+            run_command(prepare_cmd, "Preparing data for model training")
+        else:
+            print("\n--- Preparing data for model training (command demonstration only) ---")
+            print(f"Command that would be run: {' '.join(prepare_cmd)}")
+            print("This command would prepare the data for model training with train/val split.")
         
         # List all created files
         print("\n--- Files created during this example ---")
-        for root, dirs, files in os.walk(temp_dir):
-            level = root.replace(temp_dir, '').count(os.sep)
+        for root, dirs, files in os.walk(output_dir):
+            level = root.replace(output_dir, '').count(os.sep)
             indent = ' ' * 4 * level
             print(f"{indent}{os.path.basename(root)}/")
             sub_indent = ' ' * 4 * (level + 1)
             for file in files:
                 print(f"{sub_indent}{file}")
         
-    finally:
-        # Clean up
-        print(f"\nCleaning up temporary directory: {temp_dir}")
-        # Uncomment to delete the temp directory when you're done testing
-        # import shutil
-        # shutil.rmtree(temp_dir)
-        print("Note: Temporary directory was NOT deleted so you can examine the files")
-        print(f"Please manually delete {temp_dir} when you're done")
+        # CLI command reference
+        print("\n--- CLI Command Reference ---")
+        print("The DataGen CLI would support the following commands:")
+        print("  init     - Initialize DataGen with a configuration")
+        print("  generate - Generate synthetic data from seed examples")
+        print("  evolve   - Evolve instructions using Evol-Instruct")
+        print("  prepare  - Prepare data for model training")
+        print("  filter   - Apply quality filters to a dataset")
+        print("  augment  - Augment an existing dataset")
+    
+    except Exception as e:
+        print(f"\nAn error occurred: {e}")
+    
+    print("\nCLI usage example complete!")
+    print(f"All output files are in the '{output_dir}' directory")
     
     
 if __name__ == "__main__":

@@ -1,0 +1,21 @@
+{
+  "sampling": {
+    "temperature": 0.7,
+    "top_p": 0.9,
+    "max_tokens": 1024
+  },
+  "quality": {
+    "enable_filtering": true,
+    "min_instruction_length": 5,
+    "min_response_length": 20
+  },
+  "privacy": {
+    "enable_privacy": false
+  },
+  "generation": {
+    "model_name": "gpt-3.5-turbo",
+    "backend": "openai"
+  },
+  "output_format": "jsonl",
+  "log_level": "INFO"
+}
