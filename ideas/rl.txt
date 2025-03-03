@@ -1,0 +1,253 @@
+1. Introduction and Business Motivation
+
+This document outlines the implementation plan for a new, differentiating feature within the DataGen library: Reinforcement Learning (RL)-Guided Data Generation, specifically targeted at optimizing instruction tuning for Large Language Models (LLMs).
+
+1.1. Value Proposition
+
+Improved Instruction Tuning: DataGen will go beyond simply generating synthetic data. It will actively learn to generate the best synthetic data for improving a user-provided target model's performance on their specific task. This is a significant improvement over existing static generation methods.
+
+Reduced Manual Effort: This feature automates a substantial portion of the fine-tuning process, reducing the need for users to manually hand-craft instructions, prompts, and variations.
+
+Data Efficiency: By directly optimizing for downstream task performance, we can potentially achieve better results with less synthetic data, saving users compute time and costs.
+
+Targeted Improvement: Unlike generic quality metrics, our RL approach directly optimizes for what the user cares about: the performance of their model on their task.
+
+Open-Source Advantage: Offering this as a core feature of our open-source library will foster adoption, community contributions, and establish DataGen as a leader in data generation for LLM training.
+
+1.2. Competitive Differentiation
+
+DatologyAI: Datology focuses on curating existing datasets. Our feature focuses on dynamically generating data optimized for a specific model.
+
+Gretel.ai / Mostly AI: These platforms are strong in synthetic data generation, but their primary focus is privacy and statistical similarity to real data. They lack the feedback loop that directly optimizes for downstream task performance.
+
+OpenAI/Anthropic APIs: These are powerful LLMs, but they are general-purpose. They don't provide a mechanism for users to optimize data generation for their specific models.
+
+Self-Instruct/Alpaca: These are established methods for generating instruction data, but they are static. They don't adapt based on how well the generated data improves a target model.
+
+WizardLM (Evol-Instruct): Evolves instructions for general improvement, but it's not tailored to a specific target task or model. Our RL approach provides this crucial targeting.
+
+1.3. Core Concept: Instruction Tuning Optimizer
+
+The core idea is to create an RL agent that learns to control our existing data generation process (specifically, the SelfInstructGenerator and EvolInstructGenerator) to produce synthetic instruction-response pairs that maximize the performance of a user's LLM on a specific instruction-following task.
+
+2. Technical Design and Implementation
+
+2.1. New Module: datagen.rl_tuning
+
+Create a new module within the datagen package:
+
+datagen/
+    ├── ... (existing modules)
+    └── rl_tuning/
+        ├── __init__.py
+        └── rl_tuner.py  # Main class for RL loop
+        # Potentially other files later:
+        # └── agents.py     (for different RL agent implementations)
+        # └── rewards.py    (for custom reward functions)
+Use code with caution.
+2.2. RLTuner Class (in rl_tuning/rl_tuner.py)
+
+This class will manage the entire RL loop. It will interact with the existing Generator, Sampler, and Results classes.
+
+Constructor (__init__):
+
+config: Config: Takes a Config object (like the Generator class). You'll need to extend the Config class to include RL-specific settings (see section 2.4).
+
+target_model: Callable[[List[Dict[str, Any]]], Dict[str, float]]: This is a function provided by the user. It takes a list of dictionaries (the same format as Results.data) and returns a dictionary of evaluation metrics (e.g., {"accuracy": 0.85, "f1_score": 0.78}). This function must handle fine-tuning the user's model and evaluating it. This design makes the RLTuner model-agnostic.
+
+validation_dataset: List[Dict[str, Any]]: The held-out validation dataset (also a list of dictionaries) that the target_model function will use for evaluation.
+
+generator: Optional[Generator] = None: Optionally, the user can provide an existing Generator instance. If None, create a default one (e.g., SelfInstructGenerator).
+
+rl_agent: Optional[Any] = None: Initially, this can be None. For the MVP, you'll implement a simple "random search" strategy directly within the RLTuner. Later, you'll create separate agent classes.
+
+Initialization:
+
+Store the config, target_model, validation_dataset, and generator.
+
+Initialize the RL agent (or placeholder logic for the MVP).
+
+Set up any necessary logging.
+
+train Method:
+
+Arguments:
+
+num_iterations: int: The number of RL training iterations (outer loop).
+
+batch_size: int: The number of synthetic examples to generate in each iteration.
+
+RL Loop (Core Logic):
+
+Generate Data:
+
+Call the generator's generate_from_seed method (or potentially evolve_instructions, depending on the configuration).
+
+For the very first iteration, use default settings or seed data from the config.
+
+For subsequent iterations, use the current state of the RL agent to modify the generation process (see "RL Agent Actions" below). This might involve:
+
+Adjusting the temperature and top_p parameters of the Sampler.
+
+Selecting different prompt templates (if you implement multiple templates).
+
+Switching between SelfInstructGenerator and EvolInstructGenerator.
+
+Train Target Model:
+
+Call the user-provided target_model function, passing in the newly generated Results.data (the synthetic examples).
+
+The target_model function is responsible for fine-tuning the user's model and returning evaluation metrics.
+
+Calculate Reward:
+
+Extract the relevant metric(s) from the dictionary returned by target_model. The config should specify which metric to use as the reward (e.g., "accuracy").
+
+Calculate the improvement in the reward metric compared to the previous iteration (or a baseline, for the first iteration). This improvement is the reward signal.
+
+Update RL Agent (or Random Search Logic):
+
+MVP (Random Search): Randomly adjust the generator's parameters (e.g., temperature, top_p). If the reward improved, keep the new settings; otherwise, revert to the previous settings (or try a different random adjustment).
+
+Later (Policy Gradient): Use the reward signal and the current state to update the RL agent's policy network (using a policy gradient algorithm like REINFORCE). This is where you'd use libraries like torch.distributions for sampling actions and calculating policy gradients.
+
+Repeat: Continue steps 1-4 for the specified num_iterations.
+
+Logging/Tracking: Throughout the loop, log the generated data (or a sample), the rewards, the evaluation metrics, and the changes made to the generator's parameters. This is crucial for debugging and understanding the RL process.
+
+save and load Methods:
+
+Implement methods to save and load the state of the RLTuner. This should include:
+
+The RL agent's parameters (if applicable).
+
+The current state of the generator (e.g., selected prompt template, sampling parameters).
+
+Any internal state (e.g., best reward achieved so far).
+
+2.3. RL Agent Actions (and State Representation)
+
+This is where the core RL logic resides. For the MVP, you'll use a simple random search strategy. Later, you'll implement a policy gradient method.
+
+MVP (Random Search):
+
+Action Space:
+
+Adjust Sampler's temperature (e.g., +/- 0.05).
+
+Adjust Sampler's top_p (e.g., +/- 0.05).
+
+(Optionally) Choose between different prompt templates (if you have multiple templates).
+
+State: The state could simply be the previous reward and the current generator settings.
+
+Algorithm: Randomly perturb the parameters, keep the changes if the reward improves.
+
+Policy Gradient (REINFORCE - Next Step):
+
+Action Space: Same as above (adjusting temperature, top_p, choosing templates, etc.). You'll need to decide how to represent these actions numerically (e.g., continuous values for temperature, discrete choices for templates).
+
+State: Could include:
+
+Previous rewards (e.g., a moving average).
+
+Current generator settings (temperature, top_p, selected template).
+
+(Advanced) Embeddings of the previously generated data (to give the agent information about the kind of data it's producing).
+
+Policy Network: A small neural network (e.g., a 2-layer MLP) that takes the state as input and outputs the action probabilities (for discrete actions) or action parameters (for continuous actions).
+
+Algorithm: Implement the REINFORCE algorithm (or a similar policy gradient method):
+
+Collect a trajectory (a sequence of states, actions, and rewards) by running the RL loop.
+
+Calculate the return (cumulative discounted reward) for each step in the trajectory.
+
+Update the policy network's parameters to increase the probability of actions that led to higher returns.
+
+2.4. Configuration Changes (in config.py)
+
+You'll need to add a new section to your Config class to store RL-specific settings:
+
+@dataclass
+class RLTuningConfig:
+    enable_rl_tuning: bool = False  # Whether to enable RL-guided generation
+    num_iterations: int = 10      # Number of RL iterations
+    batch_size: int = 100        # Number of synthetic examples per batch
+    rl_algorithm: str = "random_search"  # "random_search" for MVP, later "reinforce", "ppo", etc.
+    learning_rate: float = 0.001  # Learning rate for the RL agent (if applicable)
+    reward_metric: str = "accuracy"   # Which metric to use as the reward signal
+    target_model_path: Optional[str] = None  # Path to user's model script (if applicable)
+    validation_data_path: Optional[str] = None # Path to validation data
+
+@dataclass
+class Config:
+    # ... (existing config options) ...
+    rl_tuning: RLTuningConfig = field(default_factory=RLTuningConfig)
+Use code with caution.
+Python
+2.5. Integration with Existing Modules
+
+Generator: The RLTuner will use the Generator to create synthetic data. You might need to add methods to the Generator to allow the RLTuner to:
+
+Get and set the Sampler's parameters (temperature, top_p).
+
+Select different prompt templates (if you implement multiple templates).
+
+Potentially switch between generation methods (e.g., Self-Instruct vs. Evol-Instruct).
+
+Sampler: The RLTuner will modify the Sampler's parameters (as described above).
+
+Results: The RLTuner will use the Results class to store and manage the generated data.
+
+cli (Future): You'll add a new command (e.g., datagen rl_tune) to run the RL tuning process from the command line. This command will need to:
+
+Load the configuration.
+
+Instantiate the RLTuner.
+
+Call the train method.
+
+3. Testing
+
+Unit Tests: Write unit tests for individual components (e.g., the RLTuner's train method, the RL agent's update logic, the reward calculation).
+
+Integration Tests: Create end-to-end tests that run the entire RL loop with a simple target model (e.g., a small classifier trained on a synthetic dataset) to verify that the system works as expected.
+
+Mocking: Use mocking to simulate the user-provided target_model function during testing. This avoids needing a real, complex model during development.
+
+4. Example Usage (for Documentation and Examples)
+
+Provide clear examples of how to use the RLTuner, including:
+
+How to define the target_model function.
+
+How to prepare the validation dataset.
+
+How to configure the RL parameters.
+
+How to run the training loop.
+
+How to interpret the results.
+
+5. Implementation Steps (Phased Approach)
+
+Create the rl_tuning module and the RLTuner class. Implement the basic structure (__init__, train skeleton, save, load).
+
+Implement the "random search" RL agent. This is the simplest approach and will allow you to test the overall workflow.
+
+Integrate with the Generator and Sampler. Add methods to Generator to get/set sampling parameters.
+
+Create a simple target_model example. This could be a small scikit-learn classifier trained on a synthetic dataset.
+
+Implement the full RL loop with the random search agent. Verify that it runs and produces reasonable output.
+
+Add configuration options for RL parameters.
+
+Write unit and integration tests.
+
+Create documentation and examples.
+
+Later: Implement a policy gradient algorithm (REINFORCE) as the RL agent.
+
+This guide provides a detailed, step-by-step roadmap for implementing RL-guided data generation within your existing DataGen library. By starting with a simple MVP and iteratively adding complexity, you can quickly deliver a valuable and differentiating feature to your users. Remember to focus on clear documentation, testing, and user feedback throughout the development process. This feature has strong potential to establish DataGen as a leader in the synthetic data generation space for LLM training.

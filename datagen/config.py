@@ -27,7 +27,7 @@ class QualityConfig:
     min_response_length: int = 5
     perplexity_threshold: Optional[float] = None
     similarity_threshold: float = 0.85  # For duplicate detection
-    custom_filters: List[str] = field(default_factory=list)
+    custom_filters: List[Any] = field(default_factory=list)
 
 
 @dataclass
@@ -51,7 +51,66 @@ class GenerationConfig:
     evol_rounds: int = 1
     prompt_templates_dir: Optional[str] = None
     prompt_template: Optional[str] = None
-    custom_prompt_variables: Dict[str, str] = field(default_factory=dict)
+    custom_prompt_variables: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class MetricsConfig:
+    """Configuration for dataset metrics and evaluation."""
+    
+    # Computation flags
+    compute_perplexity: bool = True
+    compute_topics: bool = True
+    create_visualizations: bool = True
+    
+    # Visualization settings
+    visualization_format: str = "png"
+    visualization_dpi: int = 300
+    plots_cmap: str = "viridis"
+    
+    # Model settings
+    perplexity_model: str = "distilgpt2"
+    perplexity_batch_size: int = 8
+    perplexity_max_length: int = 1024
+    
+    # Topic extraction settings
+    topic_method: str = "auto"  # "auto", "lda", "bertopic", or "frequency"
+    num_topics: int = 10
+    top_n_words: int = 10
+    
+    # Diversity settings
+    sample_size: int = 100  # For similarity calculations
+    ngram_max: int = 4  # Maximum n-gram size for uniqueness
+    embedding_model: str = "all-MiniLM-L6-v2"
+
+
+@dataclass
+class RLTuningConfig:
+    """Configuration for reinforcement learning-guided data generation."""
+    
+    enable_rl_tuning: bool = False
+    num_iterations: int = 10
+    batch_size: int = 100
+    rl_algorithm: str = "random_search"  # Options: "random_search", "reinforce"
+    reward_metric: str = "accuracy"
+    target_model_path: Optional[str] = None
+    validation_data_path: Optional[str] = None
+    
+    # Parameter range configuration
+    max_temperature: float = 1.0
+    min_temperature: float = 0.1
+    max_top_p: float = 1.0
+    min_top_p: float = 0.1
+    temperature_step: float = 0.05
+    top_p_step: float = 0.05
+    generation_methods: List[str] = field(default_factory=lambda: ["self_instruct", "evol_instruct"])
+    
+    # REINFORCE (policy gradient) specific parameters
+    learning_rate: float = 0.001
+    policy_hidden_dim: int = 64  # Hidden layer size for policy network
+    gamma: float = 0.99  # Discount factor for future rewards
+    normalize_rewards: bool = True  # Whether to normalize rewards
+    entropy_coef: float = 0.01  # Entropy coefficient for exploration
 
 
 @dataclass
@@ -61,6 +120,8 @@ class Config:
     quality: QualityConfig = field(default_factory=QualityConfig)
     privacy: PrivacyConfig = field(default_factory=PrivacyConfig)
     generation: GenerationConfig = field(default_factory=GenerationConfig)
+    metrics: MetricsConfig = field(default_factory=MetricsConfig)
+    rl_tuning: RLTuningConfig = field(default_factory=RLTuningConfig)
     output_format: str = "jsonl"
     api_keys: Dict[str, str] = field(default_factory=dict)
     log_level: str = "INFO"
@@ -89,8 +150,14 @@ class Config:
         if "generation" in config_dict:
             config.generation = GenerationConfig(**config_dict["generation"])
             
+        if "metrics" in config_dict:
+            config.metrics = MetricsConfig(**config_dict["metrics"])
+            
+        if "rl_tuning" in config_dict:
+            config.rl_tuning = RLTuningConfig(**config_dict["rl_tuning"])
+            
         for key, value in config_dict.items():
-            if key not in ["sampling", "quality", "privacy", "generation"]:
+            if key not in ["sampling", "quality", "privacy", "generation", "metrics", "rl_tuning"]:
                 setattr(config, key, value)
                 
         return config
@@ -102,6 +169,8 @@ class Config:
             "quality": {k: v for k, v in self.quality.__dict__.items()},
             "privacy": {k: v for k, v in self.privacy.__dict__.items()},
             "generation": {k: v for k, v in self.generation.__dict__.items()},
+            "metrics": {k: v for k, v in self.metrics.__dict__.items()},
+            "rl_tuning": {k: v for k, v in self.rl_tuning.__dict__.items()},
             "output_format": self.output_format,
             "api_keys": self.api_keys,
             "log_level": self.log_level,
